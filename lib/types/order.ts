@@ -6,6 +6,6 @@ export interface Order {
   amount: number;
   currency: string;
   token: string;
-  created_at: string;
   note?: string;
+  created_at: string;
 }
