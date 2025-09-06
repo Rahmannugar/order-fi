@@ -45,11 +45,23 @@ const Header = () => {
             OrderFi
           </h1>
         </div>
-        <ConnectButton
-          showBalance={true}
-          accountStatus="address"
-          chainStatus="icon"
-        />
+        <div className="hidden sm:block">
+          <ConnectButton
+            showBalance={true}
+            accountStatus="address"
+            chainStatus="icon"
+          />
+        </div>
+        <div className="sm:hidden">
+          <ConnectButton
+            showBalance={false}
+            accountStatus={{
+              smallScreen: "avatar",
+              largeScreen: "full",
+            }}
+            chainStatus="icon"
+          />
+        </div>
       </div>
       <div className="border-b border-gray-100" />
     </header>
