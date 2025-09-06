@@ -3,7 +3,7 @@ import { getOrder } from "@/lib/server/getOrder";
 
 export async function GET(
   request: Request,
-  context: { params: { orderId: string } }
+  context: { params: Record<string, string> }
 ) {
   try {
     const orderId = context.params.orderId;
