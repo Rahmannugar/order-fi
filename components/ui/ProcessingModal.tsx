@@ -268,7 +268,7 @@ const ProcessingModal = ({ order, onClose, onRetry }: ProcessingModalProps) => {
           {showReceipt && (
             <button
               onClick={onClose}
-              className="w-full rounded-xl bg-gray-900 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              className="w-full rounded-xl cursor-pointer bg-gray-900 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
             >
               Close
             </button>
