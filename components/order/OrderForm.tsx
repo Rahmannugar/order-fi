@@ -108,7 +108,7 @@ const OrderForm = ({ onSuccess }: OrderFormProps) => {
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, currency: e.target.value }))
               }
-              className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm transition-colors sm:text-sm"
+              className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm transition-colors sm:text-sm appearance-none"
               disabled={isPending}
             >
               <option value="KES">Kenyan Shilling (KES)</option>
@@ -126,7 +126,7 @@ const OrderForm = ({ onSuccess }: OrderFormProps) => {
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, token: e.target.value }))
               }
-              className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm transition-colors sm:text-sm"
+              className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm transition-colors sm:text-sm appearance-none"
               disabled={isPending}
             >
               <option value="USDC">USD Coin (USDC)</option>
