@@ -54,10 +54,8 @@ const ProcessingModal = ({ order, onClose, onRetry }: ProcessingModalProps) => {
     if (polledOrder && order && !showReceipt && !isTimedOut) {
       const currentStatus = polledOrder.status;
 
-      // Update order status in store
       updateOrder(order.order_id, { status: currentStatus });
 
-      // Handle final states
       if (currentStatus === "settled" || currentStatus === "failed") {
         setShowReceipt(true);
         setTimeout(onClose, 3000);
@@ -65,7 +63,7 @@ const ProcessingModal = ({ order, onClose, onRetry }: ProcessingModalProps) => {
     }
   }, [polledOrder, order, updateOrder, onClose, showReceipt, isTimedOut]);
 
-  // Handle retry with timeout reset
+  // Handle retry
   const handleRetry = useCallback(() => {
     if (onRetry) {
       setIsTimedOut(false);
@@ -179,7 +177,7 @@ const ProcessingModal = ({ order, onClose, onRetry }: ProcessingModalProps) => {
           </div>
           <div className="flex border-t border-gray-100">
             <button
-              onClick={onRetry}
+              onClick={handleRetry}
               className="flex-1 bg-white px-4 py-3 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
               Retry Order
@@ -201,36 +199,43 @@ const ProcessingModal = ({ order, onClose, onRetry }: ProcessingModalProps) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
       <div className="w-full max-w-md rounded-2xl border border-gray-100 bg-white p-6 shadow-xl">
         <div className="space-y-6">
-          <div className="relative">
-            <div className="absolute left-2 h-full w-px bg-gray-300"></div>
-            <div className="space-y-8">
-              {["created", "processing", "settled"].map((step) => {
-                const status = getStepStatus(currentStatus, step as any);
-                return (
-                  <div key={step} className="relative flex items-center">
-                    <div className="absolute -left-[10px]">
-                      {renderStatusIcon(status)}
-                    </div>
-                    <div className="ml-14">
-                      <p className="font-medium text-gray-900">
-                        {step.charAt(0).toUpperCase() + step.slice(1)}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {status === "complete"
-                          ? "Completed"
-                          : status === "current"
-                          ? "In Progress..."
-                          : status === "failed"
-                          ? "Failed"
-                          : "Pending"}
-                      </p>
-                    </div>
+          {/* Timeline */}
+          <div className="space-y-8">
+            {["created", "processing", "settled"].map((step, index, arr) => {
+              const status = getStepStatus(currentStatus, step as any);
+              const isLast = index === arr.length - 1;
+
+              return (
+                <div key={step} className="relative flex items-start">
+                  {/* Icon + Connector */}
+                  <div className="relative flex flex-col items-center">
+                    {renderStatusIcon(status)}
+                    {!isLast && (
+                      <div className="absolute top-10 left-1/2 h-full w-px -translate-x-1/2 bg-gray-300" />
+                    )}
                   </div>
-                );
-              })}
-            </div>
+
+                  {/* Text */}
+                  <div className="ml-6">
+                    <p className="font-medium text-gray-900">
+                      {step.charAt(0).toUpperCase() + step.slice(1)} order
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {status === "complete"
+                        ? "Completed"
+                        : status === "current"
+                        ? "In Progress..."
+                        : status === "failed"
+                        ? "Failed"
+                        : "Pending"}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
+          {/* Order details */}
           <div className="rounded-xl bg-gray-50/80 p-4 backdrop-blur-sm">
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between">
