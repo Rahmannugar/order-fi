@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import type { Order } from "@/lib/types/order";
-import { useOrderStore } from "@/lib/stores/orderStore";
+
 
 const fetchOrder = async (orderId: string): Promise<Order> => {
   const { data } = await axios.get<Order>(`/api/mock/orders/${orderId}`);

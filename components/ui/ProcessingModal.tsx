@@ -33,7 +33,7 @@ const ProcessingModal = ({ order, onClose, onRetry }: ProcessingModalProps) => {
       setIsTimedOut(false);
       setShowReceipt(false);
     }
-  }, [order?.order_id]);
+  }, [order, order?.order_id]);
 
   // Handle timeout
   useEffect(() => {
@@ -203,7 +203,10 @@ const ProcessingModal = ({ order, onClose, onRetry }: ProcessingModalProps) => {
           {/* Timeline */}
           <div className="space-y-8">
             {["created", "processing", "settled"].map((step, index, arr) => {
-              const status = getStepStatus(currentStatus, step as any);
+              const status = getStepStatus(
+                currentStatus,
+                step as "created" | "processing" | "settled"
+              );
               const isLast = index === arr.length - 1;
 
               return (
