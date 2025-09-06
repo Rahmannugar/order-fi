@@ -52,16 +52,13 @@ const ProcessingModal = ({ order, onClose, onRetry }: ProcessingModalProps) => {
   // Handle order updates
   useEffect(() => {
     if (polledOrder && order && !showReceipt && !isTimedOut) {
-      // Only update if not already in final state
-      const currentOrder = order;
-      if (
-        currentOrder.status !== "settled" &&
-        currentOrder.status !== "failed"
-      ) {
-        updateOrder(order.order_id, { status: polledOrder.status });
-      }
+      const currentStatus = polledOrder.status;
 
-      if (polledOrder.status === "settled" || polledOrder.status === "failed") {
+      // Update order status in store
+      updateOrder(order.order_id, { status: currentStatus });
+
+      // Handle final states
+      if (currentStatus === "settled" || currentStatus === "failed") {
         setShowReceipt(true);
         setTimeout(onClose, 3000);
       }
@@ -76,19 +73,90 @@ const ProcessingModal = ({ order, onClose, onRetry }: ProcessingModalProps) => {
     }
   }, [onRetry]);
 
+  const getStepStatus = (
+    currentStatus: Order["status"],
+    step: "created" | "processing" | "settled"
+  ) => {
+    const statusOrder = ["created", "processing", "settled", "failed"];
+    const currentIndex = statusOrder.indexOf(currentStatus);
+    const stepIndex = statusOrder.indexOf(step);
+
+    if (currentStatus === "failed") {
+      return step === "settled" ? "failed" : "complete";
+    }
+
+    if (currentIndex >= stepIndex) return "complete";
+    if (currentIndex + 1 === stepIndex) return "current";
+    return "pending";
+  };
+
+  const renderStatusIcon = (
+    status: "complete" | "current" | "pending" | "failed"
+  ) => {
+    switch (status) {
+      case "complete":
+        return (
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500 shadow-md shadow-green-500/20">
+            <svg
+              className="h-5 w-5 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </div>
+        );
+      case "current":
+        return (
+          <div className="flex h-10 w-10 animate-pulse items-center justify-center rounded-full bg-blue-500 shadow-md shadow-blue-500/20">
+            <div className="h-3 w-3 rounded-full bg-white"></div>
+          </div>
+        );
+      case "failed":
+        return (
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-500 shadow-md shadow-red-500/20">
+            <svg
+              className="h-5 w-5 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </div>
+        );
+      default:
+        return (
+          <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-gray-200 bg-white shadow-sm">
+            <div className="h-2.5 w-2.5 rounded-full bg-gray-300"></div>
+          </div>
+        );
+    }
+  };
+
   if (!order) return null;
 
   const currentStatus = polledOrder?.status || order.status;
 
-  // Show timeout screen
   if (isTimedOut) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-        <div className="w-full max-w-sm rounded-lg border bg-white p-6 shadow-lg">
-          <div className="text-center">
-            <div className="mx-auto h-12 w-12 rounded-full bg-yellow-100 p-2">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+        <div className="w-full max-w-md overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl">
+          <div className="p-6">
+            <div className="mx-auto h-16 w-16 rounded-full bg-yellow-100 p-2">
               <svg
-                className="h-8 w-8 text-yellow-600"
+                className="h-12 w-12 text-yellow-600"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -101,40 +169,28 @@ const ProcessingModal = ({ order, onClose, onRetry }: ProcessingModalProps) => {
                 />
               </svg>
             </div>
-            <h3 className="mt-2 text-lg font-medium">Timed out – try again</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              The order took too long to process.
+            <h3 className="mt-4 text-center text-lg font-semibold text-gray-900">
+              Order Timed Out
+            </h3>
+            <p className="mt-2 text-center text-sm text-gray-600">
+              The order is taking longer than expected to process. Would you
+              like to try again?
             </p>
-            <div className="mt-4 space-x-3">
-              <button
-                onClick={handleRetry}
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-              >
-                Retry
-              </button>
-              <button
-                onClick={onClose}
-                className="rounded-md border px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
-              >
-                Close
-              </button>
-            </div>
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Loading state
-  if (!showReceipt && !isTimedOut) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-        <div className="w-full max-w-sm rounded-lg border bg-white p-6 shadow-lg">
-          <div className="flex justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-          </div>
-          <div className="mt-4 text-center">
-            <h3 className="text-lg font-medium">Loading Order Status...</h3>
+          <div className="flex border-t border-gray-100">
+            <button
+              onClick={onRetry}
+              className="flex-1 bg-white px-4 py-3 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              Retry Order
+            </button>
+            <div className="w-px bg-gray-100"></div>
+            <button
+              onClick={onClose}
+              className="flex-1 bg-white px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       </div>
@@ -142,87 +198,73 @@ const ProcessingModal = ({ order, onClose, onRetry }: ProcessingModalProps) => {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-sm rounded-lg border bg-white p-6 shadow-lg">
-        {showReceipt ? (
-          <div className="space-y-4">
-            <div className="text-center">
-              {currentStatus === "settled" ? (
-                <div className="mx-auto h-12 w-12 rounded-full bg-green-100 p-2">
-                  <svg
-                    className="h-8 w-8 text-green-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </div>
-              ) : (
-                <div className="mx-auto h-12 w-12 rounded-full bg-red-100 p-2">
-                  <svg
-                    className="h-8 w-8 text-red-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-2xl border border-gray-100 bg-white p-6 shadow-xl">
+        <div className="space-y-6">
+          <div className="relative">
+            <div className="absolute left-2 h-full w-px bg-gray-300"></div>
+            <div className="space-y-8">
+              {["created", "processing", "settled"].map((step) => {
+                const status = getStepStatus(currentStatus, step as any);
+                return (
+                  <div key={step} className="relative flex items-center">
+                    <div className="absolute -left-[10px]">
+                      {renderStatusIcon(status)}
+                    </div>
+                    <div className="ml-14">
+                      <p className="font-medium text-gray-900">
+                        {step.charAt(0).toUpperCase() + step.slice(1)}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {status === "complete"
+                          ? "Completed"
+                          : status === "current"
+                          ? "In Progress..."
+                          : status === "failed"
+                          ? "Failed"
+                          : "Pending"}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="rounded-xl bg-gray-50/80 p-4 backdrop-blur-sm">
+            <dl className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-gray-500">Order ID</dt>
+                <dd className="font-medium text-gray-900">{order.order_id}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-gray-500">Amount</dt>
+                <dd className="font-medium text-gray-900">
+                  {order.amount} {order.currency}
+                </dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-gray-500">Token</dt>
+                <dd className="font-medium text-gray-900">{order.token}</dd>
+              </div>
+              {order.note && (
+                <div className="flex justify-between">
+                  <dt className="text-gray-500">Note</dt>
+                  <dd className="font-medium text-gray-900">{order.note}</dd>
                 </div>
               )}
-              <h3 className="mt-2 text-lg font-medium">
-                Order {currentStatus === "settled" ? "Complete" : "Failed"}
-              </h3>
-            </div>
+            </dl>
+          </div>
 
-            <div className="rounded-md bg-gray-50 p-4">
-              <dl className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <dt className="text-gray-500">Order ID</dt>
-                  <dd className="font-medium">{order.order_id}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-gray-500">Amount</dt>
-                  <dd className="font-medium">
-                    {order.amount} {order.currency}
-                  </dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-gray-500">Token</dt>
-                  <dd className="font-medium">{order.token}</dd>
-                </div>
-                {order.note && (
-                  <div className="flex justify-between">
-                    <dt className="text-gray-500">Note</dt>
-                    <dd className="font-medium">{order.note}</dd>
-                  </div>
-                )}
-              </dl>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex justify-center">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-            </div>
-            <div className="text-center">
-              <h3 className="text-lg font-medium">Processing Order</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Please wait while we process your order...
-              </p>
-            </div>
-          </div>
-        )}
+          {showReceipt && (
+            <button
+              onClick={onClose}
+              className="w-full rounded-xl bg-gray-900 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+            >
+              Close
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

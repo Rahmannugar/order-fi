@@ -13,7 +13,7 @@ const createOrder = async (payload: Payload): Promise<Order> => {
 };
 
 export const useCreateOrder = () => {
-  const { addOrder, updateOrder } = useOrderStore();
+  const { addOrder } = useOrderStore();
 
   return useMutation({
     mutationFn: createOrder,

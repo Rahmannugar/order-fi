@@ -12,7 +12,7 @@ const Orders = () => {
 
   if (orders.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-8 text-center">
+      <div className="rounded-xl border border-dashed border-gray-300 bg-white/50 p-8 text-center shadow-sm backdrop-blur-sm">
         <p className="text-gray-500">No orders yet. Create your first order!</p>
       </div>
     );

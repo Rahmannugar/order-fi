@@ -19,7 +19,7 @@ const OrderStatusCard = ({ order }: OrderStatusCardProps) => {
   };
 
   return (
-    <div className="rounded-lg border p-6 shadow-sm">
+    <div className="rounded-lg border border-gray-200 p-6 shadow-sm">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium">Order #{order.order_id}</h3>
         <span

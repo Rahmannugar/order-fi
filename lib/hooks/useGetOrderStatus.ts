@@ -34,12 +34,7 @@ export const useOrderPolling = (orderId: string | null) => {
 
       return 3000; // Poll every 3 seconds
     },
-    onSuccess: (data) => {
-      if (orderId) {
-        updateOrder(orderId, { status: data.status });
-      }
-    },
-    staleTime: 0,
+    staleTime: Infinity,
     refetchOnWindowFocus: false,
     retry: 3,
     gcTime: 0,
