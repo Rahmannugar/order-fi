@@ -1,57 +1,59 @@
-"use client";
+import { Order } from "@/lib/types/order";
 
-import { useGetOrderStatus } from "@/lib/hooks/useGetOrderStatus";
-import { useOrderStore } from "@/lib/stores/orderStore";
+interface OrderStatusCardProps {
+  order: Order;
+}
 
-const OrderStatusCard = () => {
-  const { order, reset, finalized } = useOrderStore();
-  const { isPolling } = useGetOrderStatus();
-
-  if (!order) return null;
+const OrderStatusCard = ({ order }: OrderStatusCardProps) => {
+  const getStatusColor = (status: Order["status"]) => {
+    switch (status) {
+      case "settled":
+        return "bg-green-100 text-green-800";
+      case "failed":
+        return "bg-red-100 text-red-800";
+      case "processing":
+        return "bg-yellow-100 text-yellow-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
 
   return (
-    <div className="rounded-lg border bg-white p-6 shadow-sm space-y-4">
-      <h2 className="text-lg font-semibold">Order Status</h2>
-
-      <div className="space-y-1 text-sm">
-        <p>
-          <span className="font-medium">Order ID:</span> {order.order_id}
-        </p>
-        <p>
-          <span className="font-medium">Amount:</span> {order.amount}{" "}
-          {order.currency}
-        </p>
-        <p>
-          <span className="font-medium">Token:</span> {order.token}
-        </p>
-        <p>
-          <span className="font-medium">Status:</span>{" "}
-          <span
-            className={
-              order.status === "settled"
-                ? "text-green-600"
-                : order.status === "failed"
-                ? "text-red-600"
-                : "text-yellow-600"
-            }
-          >
-            {order.status}
-          </span>
-        </p>
-      </div>
-
-      {isPolling && !finalized && (
-        <p className="text-sm text-gray-500">Polling status...</p>
-      )}
-
-      {finalized && (
-        <button
-          onClick={reset}
-          className="mt-4 w-full rounded-md bg-gray-200 py-2 text-gray-800 hover:bg-gray-300"
+    <div className="rounded-lg border p-6 shadow-sm">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-medium">Order #{order.order_id}</h3>
+        <span
+          className={`rounded-full px-3 py-1 text-sm font-medium ${getStatusColor(
+            order.status
+          )}`}
         >
-          Create New Order
-        </button>
-      )}
+          {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+        </span>
+      </div>
+      <div className="mt-4 space-y-2">
+        <div className="flex justify-between">
+          <span className="text-gray-600">Amount</span>
+          <span className="font-medium">
+            {order.amount} {order.currency}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600">Token</span>
+          <span className="font-medium">{order.token}</span>
+        </div>
+        {order.note && (
+          <div className="flex justify-between">
+            <span className="text-gray-600">Note</span>
+            <span className="font-medium">{order.note}</span>
+          </div>
+        )}
+        <div className="flex justify-between">
+          <span className="text-gray-600">Created</span>
+          <span className="font-medium">
+            {new Date(order.created_at).toLocaleString()}
+          </span>
+        </div>
+      </div>
     </div>
   );
 };

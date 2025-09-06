@@ -1,19 +1,29 @@
 import { NextResponse } from "next/server";
-import { getOrder } from "@/lib/server/mockDb";
+import { getOrder } from "@/lib/server/getOrder";
 
 export async function GET(
-  _: Request,
+  _req: Request,
   { params }: { params: { orderId: string } }
 ) {
-  const order = getOrder(params.orderId);
-  if (!order) {
+  try {
+    const order = getOrder(params.orderId);
+
+    if (!order) {
+      return NextResponse.json(
+        {
+          error: "order_not_found",
+          message: `No order with id ${params.orderId}`,
+        },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(order);
+  } catch (error) {
+    console.error("Error fetching order:", error);
     return NextResponse.json(
-      {
-        error: "order_not_found",
-        message: `No order with id ${params.orderId}`,
-      },
-      { status: 404 }
+      { error: "internal_error", message: "Failed to fetch order" },
+      { status: 500 }
     );
   }
-  return NextResponse.json(order);
 }

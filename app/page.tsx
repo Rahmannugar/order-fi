@@ -1,17 +1,58 @@
 "use client";
-import { Header } from "@/components/Header";
-import OrderForm from "@/components/order/OrderForm";
-import OrderStatusCard from "@/components/order/OrderStatusCard";
-import { useOrderStore } from "@/lib/stores/orderStore";
 
-const HomePage = () => {
-  const { order } = useOrderStore();
+import { useState } from "react";
+import { useAccount } from "wagmi";
+import Header from "@/components/ui/Header";
+import OrderForm from "@/components/order/OrderForm";
+import Orders from "@/components/order/Orders";
+import ProcessingModal from "@/components/ui/ProcessingModal";
+import { useOrderStore } from "@/lib/stores/orderStore";
+import type { Order } from "@/lib/types/order";
+
+const Page = () => {
+  const { isConnected } = useAccount();
+  const [processingOrder, setProcessingOrder] = useState<Order | null>(null);
+  const orders = useOrderStore((state) => state.orders);
+
+  const handleNewOrder = (order: Order) => {
+    setProcessingOrder(order);
+  };
+
   return (
-    <main className="max-w-2xl mx-auto py-10 space-y-8">
+    <div className="min-h-screen bg-gray-50">
       <Header />
-      {!order ? <OrderForm /> : <OrderStatusCard />}
-    </main>
+      <main className="mx-auto max-w-7xl p-4">
+        {!isConnected ? (
+          <div className="rounded-lg border bg-white p-8 text-center shadow-sm">
+            <h2 className="mb-2 text-xl font-semibold text-gray-900">
+              Connect Your Wallet
+            </h2>
+            <p className="text-gray-600">
+              Please connect your wallet to access OrderFi features
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-8 md:grid-cols-2">
+            <div>
+              <h2 className="mb-4 text-2xl font-bold">Create Order</h2>
+              <div className="rounded-lg border bg-white p-6 shadow-sm">
+                <OrderForm onSuccess={handleNewOrder} />
+              </div>
+            </div>
+            <div>
+              <h2 className="mb-4 text-2xl font-bold">Recent Orders</h2>
+              <Orders />
+            </div>
+          </div>
+        )}
+      </main>
+
+      <ProcessingModal
+        order={processingOrder}
+        onClose={() => setProcessingOrder(null)}
+      />
+    </div>
   );
 };
 
-export default HomePage;
+export default Page;

@@ -1,6 +1,5 @@
-import { Order } from "@/lib/types/order";
-
-export const orders: Record<string, Order> = {};
+import { mockOrders } from "@/lib/db/orders";
+import type { Order } from "@/lib/types/order";
 
 export const createOrder = (
   data: Omit<Order, "order_id" | "status" | "created_at">
@@ -11,6 +10,25 @@ export const createOrder = (
     created_at: new Date().toISOString(),
     ...data,
   };
-  orders[order.order_id] = order;
+
+  mockOrders[order.order_id] = order;
+
+  // Step 1: move to "processing" after 2–5s
+  setTimeout(() => {
+    const current = mockOrders[order.order_id];
+    if (current && !["settled", "failed"].includes(current.status)) {
+      current.status = "processing";
+    }
+  }, Math.floor(Math.random() * 3000) + 2000);
+
+  // Step 2: finalize after 18s
+  setTimeout(() => {
+    const current = mockOrders[order.order_id];
+    if (current && !["settled", "failed"].includes(current.status)) {
+      const roll = Math.random();
+      current.status = roll < 0.8 ? "settled" : "failed";
+    }
+  }, 18000 + Math.floor(Math.random() * 5000)); // 18–23s
+
   return order;
 };

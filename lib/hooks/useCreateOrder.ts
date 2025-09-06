@@ -1,27 +1,24 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { useOrderStore } from "@/lib/stores/orderStore";
-import type { Order } from "@/lib/types/order";
 import axios from "axios";
+import type { Order } from "@/lib/types/order";
+import { useOrderStore } from "@/lib/stores/orderStore";
 
-type CreateOrderPayload = Omit<Order, "order_id" | "status" | "created_at">;
+type Payload = Omit<Order, "order_id" | "status" | "created_at">;
 
-const createOrderRequest = async (
-  payload: CreateOrderPayload
-): Promise<Order> => {
-  const { data } = await axios.post<Order>("/api/mock/orders/create", payload, {
-    headers: { "Content-Type": "application/json" },
-  });
+const createOrder = async (payload: Payload): Promise<Order> => {
+  const { data } = await axios.post("/api/mock/orders/create", payload);
   return data;
 };
 
 export const useCreateOrder = () => {
-  const { setOrder } = useOrderStore();
+  const { addOrder, updateOrder } = useOrderStore();
 
   return useMutation({
-    mutationFn: createOrderRequest,
-    onSuccess: (data) => setOrder(data),
-    retry: false,
+    mutationFn: createOrder,
+    onSuccess: (order) => {
+      addOrder(order);
+    },
   });
 };
