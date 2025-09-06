@@ -13,22 +13,19 @@ export const createOrder = (
 
   mockOrders[order.order_id] = order;
 
-  // Step 1: move to "processing" after 2–5s
   setTimeout(() => {
     const current = mockOrders[order.order_id];
-    if (current && !["settled", "failed"].includes(current.status)) {
+    if (current && current.status === "created") {
       current.status = "processing";
     }
-  }, Math.floor(Math.random() * 3000) + 2000);
+  }, 7000);
 
-  // Step 2: finalize after 18s
   setTimeout(() => {
     const current = mockOrders[order.order_id];
-    if (current && !["settled", "failed"].includes(current.status)) {
-      const roll = Math.random();
-      current.status = roll < 0.8 ? "settled" : "failed";
+    if (current && current.status === "processing") {
+      current.status = Math.random() < 0.8 ? "settled" : "failed";
     }
-  }, 18000 + Math.floor(Math.random() * 5000)); // 18–23s
+  }, 17000);
 
   return order;
 };

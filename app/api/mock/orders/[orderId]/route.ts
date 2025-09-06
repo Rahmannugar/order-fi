@@ -2,27 +2,24 @@ import { NextResponse } from "next/server";
 import { getOrder } from "@/lib/server/getOrder";
 
 export async function GET(
-  _req: Request,
+  request: Request,
   { params }: { params: { orderId: string } }
 ) {
   try {
-    const order = getOrder(params.orderId);
+    const orderId = await Promise.resolve(params.orderId);
+    const order = getOrder(orderId);
 
     if (!order) {
       return NextResponse.json(
-        {
-          error: "order_not_found",
-          message: `No order with id ${params.orderId}`,
-        },
+        { error: "order_not_found", message: "Order not found" },
         { status: 404 }
       );
     }
 
     return NextResponse.json(order);
   } catch (error) {
-    console.error("Error fetching order:", error);
     return NextResponse.json(
-      { error: "internal_error", message: "Failed to fetch order" },
+      { error: "internal_error", message: "Internal server error" },
       { status: 500 }
     );
   }

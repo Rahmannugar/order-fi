@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Order } from "@/lib/types/order";
 import { useOrderPolling } from "@/lib/hooks/useGetOrderStatus";
 import { useOrderStore } from "@/lib/stores/orderStore";
@@ -8,36 +8,143 @@ import { useOrderStore } from "@/lib/stores/orderStore";
 interface ProcessingModalProps {
   order: Order | null;
   onClose: () => void;
+  onRetry?: () => void;
 }
 
-const ProcessingModal = ({ order, onClose }: ProcessingModalProps) => {
-  const { data: polledOrder } = useOrderPolling(order?.order_id || null);
+const ProcessingModal = ({ order, onClose, onRetry }: ProcessingModalProps) => {
+  const { data: polledOrder, isError } = useOrderPolling(
+    order?.order_id || null
+  );
   const { updateOrder } = useOrderStore();
+  const [isTimedOut, setIsTimedOut] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
 
-  // Handle order status updates and finalization
+  // Handle errors by showing timeout screen
   useEffect(() => {
-    if (polledOrder && order) {
-      updateOrder(order.order_id, { status: polledOrder.status });
+    if (isError && order && !isTimedOut) {
+      updateOrder(order.order_id, { status: "failed" });
+      setIsTimedOut(true);
+    }
+  }, [isError, order, updateOrder, isTimedOut]);
+
+  // Reset states when order changes
+  useEffect(() => {
+    if (order) {
+      setIsTimedOut(false);
+      setShowReceipt(false);
+    }
+  }, [order?.order_id]);
+
+  // Handle timeout
+  useEffect(() => {
+    if (!order || showReceipt || isTimedOut) return;
+
+    const timeoutId = setTimeout(() => {
+      if (order) {
+        updateOrder(order.order_id, { status: "failed" });
+        setIsTimedOut(true);
+      }
+    }, 60000);
+
+    return () => clearTimeout(timeoutId);
+  }, [order, showReceipt, isTimedOut, updateOrder]);
+
+  // Handle order updates
+  useEffect(() => {
+    if (polledOrder && order && !showReceipt && !isTimedOut) {
+      // Only update if not already in final state
+      const currentOrder = order;
+      if (
+        currentOrder.status !== "settled" &&
+        currentOrder.status !== "failed"
+      ) {
+        updateOrder(order.order_id, { status: polledOrder.status });
+      }
 
       if (polledOrder.status === "settled" || polledOrder.status === "failed") {
         setShowReceipt(true);
-        const timer = setTimeout(onClose, 3000); // Show receipt for 3 seconds
-        return () => clearTimeout(timer);
+        setTimeout(onClose, 3000);
       }
     }
-  }, [polledOrder, order, updateOrder, onClose]);
+  }, [polledOrder, order, updateOrder, onClose, showReceipt, isTimedOut]);
+
+  // Handle retry with timeout reset
+  const handleRetry = useCallback(() => {
+    if (onRetry) {
+      setIsTimedOut(false);
+      onRetry();
+    }
+  }, [onRetry]);
 
   if (!order) return null;
 
   const currentStatus = polledOrder?.status || order.status;
-  const isFinalized = currentStatus === "settled" || currentStatus === "failed";
+
+  // Show timeout screen
+  if (isTimedOut) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="w-full max-w-sm rounded-lg border bg-white p-6 shadow-lg">
+          <div className="text-center">
+            <div className="mx-auto h-12 w-12 rounded-full bg-yellow-100 p-2">
+              <svg
+                className="h-8 w-8 text-yellow-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <h3 className="mt-2 text-lg font-medium">Timed out – try again</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              The order took too long to process.
+            </p>
+            <div className="mt-4 space-x-3">
+              <button
+                onClick={handleRetry}
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                Retry
+              </button>
+              <button
+                onClick={onClose}
+                className="rounded-md border px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state
+  if (!showReceipt && !isTimedOut) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="w-full max-w-sm rounded-lg border bg-white p-6 shadow-lg">
+          <div className="flex justify-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+          </div>
+          <div className="mt-4 text-center">
+            <h3 className="text-lg font-medium">Loading Order Status...</h3>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-sm rounded-lg border bg-white p-6 shadow-lg">
         {showReceipt ? (
-          // Receipt card
           <div className="space-y-4">
             <div className="text-center">
               {currentStatus === "settled" ? (
@@ -104,7 +211,6 @@ const ProcessingModal = ({ order, onClose }: ProcessingModalProps) => {
             </div>
           </div>
         ) : (
-          // Processing view
           <div className="space-y-4">
             <div className="flex justify-center">
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />

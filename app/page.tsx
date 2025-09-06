@@ -6,16 +6,35 @@ import Header from "@/components/ui/Header";
 import OrderForm from "@/components/order/OrderForm";
 import Orders from "@/components/order/Orders";
 import ProcessingModal from "@/components/ui/ProcessingModal";
-import { useOrderStore } from "@/lib/stores/orderStore";
 import type { Order } from "@/lib/types/order";
+import { useCreateOrder } from "@/lib/hooks/useCreateOrder";
 
 const Page = () => {
   const { isConnected } = useAccount();
   const [processingOrder, setProcessingOrder] = useState<Order | null>(null);
-  const orders = useOrderStore((state) => state.orders);
+  const { mutate: createOrder } = useCreateOrder();
 
   const handleNewOrder = (order: Order) => {
     setProcessingOrder(order);
+  };
+
+  const handleRetry = () => {
+    if (!processingOrder) return;
+
+    // Create a new order with the same parameters if timeout
+    createOrder(
+      {
+        amount: processingOrder.amount,
+        currency: processingOrder.currency,
+        token: processingOrder.token,
+        note: processingOrder.note,
+      },
+      {
+        onSuccess: (newOrder) => {
+          setProcessingOrder(newOrder);
+        },
+      }
+    );
   };
 
   return (
@@ -50,6 +69,7 @@ const Page = () => {
       <ProcessingModal
         order={processingOrder}
         onClose={() => setProcessingOrder(null)}
+        onRetry={handleRetry}
       />
     </div>
   );

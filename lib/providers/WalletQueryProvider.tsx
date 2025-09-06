@@ -5,32 +5,31 @@ import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider } from "wagmi";
 import { mainnet, sepolia } from "wagmi/chains";
-import { http } from "wagmi";
-import { metaMask, walletConnect } from "wagmi/connectors";
-import { useMemo, ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 
-// Create QueryClient instance outside component
 const queryClient = new QueryClient();
+const projectId = process.env.NEXT_PUBLIC_PROJECT_ID;
+if (!projectId) {
+  throw new Error("NEXT_PUBLIC_PROJECT_ID is not set");
+}
 
-// Create wagmi config once
 const wagmiConfig = getDefaultConfig({
   appName: "OrderFi",
-  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
+  projectId: projectId,
   chains: [mainnet, sepolia],
-  transports: {
-    [mainnet.id]: http(),
-    [sepolia.id]: http(),
-  },
-  connectors: [
-    metaMask(),
-    walletConnect({
-      projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
-    }),
-  ],
   ssr: true,
 });
 
 export default function WalletProvider({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  if (!mounted) return null;
+
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
