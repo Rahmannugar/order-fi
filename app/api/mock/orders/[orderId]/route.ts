@@ -3,10 +3,10 @@ import { getOrder } from "@/lib/server/getOrder";
 
 export async function GET(
   request: Request,
-  { params }: { params: { orderId: string } }
+  context: { params: { orderId: string } }
 ) {
   try {
-    const orderId = await Promise.resolve(params.orderId);
+    const orderId = context.params.orderId;
     const order = getOrder(orderId);
 
     if (!order) {
