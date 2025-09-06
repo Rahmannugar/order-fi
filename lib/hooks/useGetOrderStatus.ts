@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import type { Order } from "@/lib/types/order";
 import { useOrderStore } from "@/lib/stores/orderStore";
@@ -11,9 +11,10 @@ const fetchOrder = async (orderId: string): Promise<Order> => {
 };
 
 export const useOrderPolling = (orderId: string | null) => {
+  const queryClient = useQueryClient();
   const { updateOrder } = useOrderStore();
 
-  return useQuery<Order>({
+  const query = useQuery<Order>({
     queryKey: ["order", orderId],
     queryFn: () =>
       orderId ? fetchOrder(orderId) : Promise.reject("No orderId"),
@@ -39,4 +40,13 @@ export const useOrderPolling = (orderId: string | null) => {
     retry: 3,
     gcTime: 0,
   });
+
+  return {
+    ...query,
+    remove: () => {
+      if (orderId) {
+        queryClient.removeQueries({ queryKey: ["order", orderId] });
+      }
+    },
+  };
 };

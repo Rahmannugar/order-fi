@@ -12,12 +12,24 @@ interface ProcessingModalProps {
 }
 
 const ProcessingModal = ({ order, onClose, onRetry }: ProcessingModalProps) => {
-  const { data: polledOrder, isError } = useOrderPolling(
-    order?.order_id || null
-  );
+  const {
+    data: polledOrder,
+    isError,
+    remove,
+  } = useOrderPolling(order?.order_id || null);
   const { updateOrder } = useOrderStore();
   const [isTimedOut, setIsTimedOut] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
+
+  // Reset states when order changes
+  useEffect(() => {
+    if (order) {
+      setIsTimedOut(false);
+      setShowReceipt(false);
+      // Reset any existing polling data for the previous order
+      remove();
+    }
+  }, [order?.order_id, remove]);
 
   // Handle errors by showing timeout screen
   useEffect(() => {
@@ -26,14 +38,6 @@ const ProcessingModal = ({ order, onClose, onRetry }: ProcessingModalProps) => {
       setIsTimedOut(true);
     }
   }, [isError, order, updateOrder, isTimedOut]);
-
-  // Reset states when order changes
-  useEffect(() => {
-    if (order) {
-      setIsTimedOut(false);
-      setShowReceipt(false);
-    }
-  }, [order?.order_id]);
 
   // Handle timeout
   useEffect(() => {
@@ -67,9 +71,11 @@ const ProcessingModal = ({ order, onClose, onRetry }: ProcessingModalProps) => {
   const handleRetry = useCallback(() => {
     if (onRetry) {
       setIsTimedOut(false);
+      setShowReceipt(false);
+      remove(); // Clear existing polling data
       onRetry();
     }
-  }, [onRetry]);
+  }, [onRetry, remove]);
 
   const getStepStatus = (
     currentStatus: Order["status"],
